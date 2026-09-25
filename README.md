@@ -20,16 +20,19 @@
 ## 🛠️ Quick Start
 
 ### 1. Build Docker Image (Production Ready)
+
 ```bash
 docker build -t gcurl:latest .
 ```
 
 ### 2. Jalankan Container
+
 ```bash
 docker run --rm -it -v $(pwd):/var/www/html gcurl:latest sh
 ```
 
 ### 3. Jalankan Test Suite
+
 ```bash
 # Menjalankan official PHP phpt test runner
 docker run --rm -v $(pwd):/var/www/html gcurl:latest php /var/www/html/ext/run-tests.php -q /var/www/html/ext/tests/
@@ -40,6 +43,7 @@ docker run --rm -v $(pwd):/var/www/html gcurl:latest php /var/www/html/ext/run-t
 ## 📖 Contoh Penggunaan
 
 ### 1. Basic Request dengan Impersonasi Chrome
+
 ```php
 $ch = gcurl_init('https://tls.peet.ws/api/all');
 
@@ -62,8 +66,9 @@ echo "JA3: " . $data['tls']['ja3'] . "\n";
 ```
 
 ### 2. Fallback ke Firefox & Residential Proxy
+
 ```php
-$ch = gcurl_init('https://kasirpintar.com/login');
+$ch = gcurl_init('https://tls.peet.ws/api/all');
 
 // Jika target mendeteksi Chrome, ganti ke Firefox
 gcurl_impersonate($ch, 'firefox');
@@ -81,6 +86,7 @@ gcurl_close($ch);
 ```
 
 ### 3. High-Concurrency Scraping dengan `GCurlPool`
+
 ```php
 use GCurl\GCurlPool;
 use GCurl\GCurlResponse;
@@ -126,10 +132,9 @@ $pool->run();
 │   ├── GCurlClient.php             # Fluent OOP HTTP Client
 │   ├── GCurlResponse.php           # Response DTO
 │   └── GCurlPool.php               # High-volume worker pool with proxy rotation
-├── examples/                       # Executable sample scripts
-│   ├── test_single_handle.php      # Verifikasi single handle & impersonate
-│   ├── test_multi_concurrency.php  # Verifikasi concurrency multi-handle
-│   ├── test_oop_wrapper.php        # Verifikasi class GCurlClient & GCurlPool
-│   └── login_kasirpintar.php       # Integrasi bypass Cloudflare kasirpintar.com
-└── plan/                           # Dokumentasi & roadmap lengkap
+└── examples/                       # Executable sample scripts
+    ├── test_single_handle.php      # Verifikasi single handle & impersonate
+    ├── test_multi_concurrency.php  # Verifikasi concurrency multi-handle
+    ├── test_oop_wrapper.php        # Verifikasi class GCurlClient & GCurlPool
+    └── login_kasirpintar.php       # Integrasi bypass Cloudflare kasirpintar.com
 ```

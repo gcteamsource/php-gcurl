@@ -30,6 +30,7 @@ class GCurlClient
         $merged = array_replace([
             GCURLOPT_RETURNTRANSFER => true,
             GCURLOPT_FOLLOWLOCATION => true,
+            GCURLOPT_ENCODING       => '',
             GCURLOPT_CONNECTTIMEOUT => 10,
             GCURLOPT_TIMEOUT        => 30,
         ], $this->defaultOptions);
