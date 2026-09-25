@@ -39,15 +39,37 @@ if test "$PHP_GCURL" != "no"; then
   fi
 
   dnl Check for libcurl-impersonate library and curl_easy_impersonate function
-  PHP_CHECK_LIBRARY([curl-impersonate], [curl_easy_impersonate],
-  [
+  dnl Note: We use AC_LINK_IFELSE directly instead of PHP_CHECK_LIBRARY because
+  dnl PHP_CHECK_LIBRARY generates "unset ac_cv_lib_curl-impersonate_..." which causes
+  dnl "bad variable name" error on POSIX / BusyBox sh due to hyphen in library name.
+  AC_MSG_CHECKING([for curl_easy_impersonate in -lcurl-impersonate])
+
+  save_old_CPPFLAGS=$CPPFLAGS
+  save_old_LDFLAGS=$LDFLAGS
+  save_old_LIBS=$LIBS
+
+  CPPFLAGS="-I$GCURL_DIR/include $CPPFLAGS"
+  LDFLAGS="-L$GCURL_LIB_DIR $LDFLAGS"
+  LIBS="-lcurl-impersonate $LIBS"
+
+  AC_LINK_IFELSE([
+    AC_LANG_PROGRAM([[
+      #include <curl/curl.h>
+    ]], [[
+      curl_easy_impersonate(NULL, "chrome", 1);
+    ]])
+  ], [
+    AC_MSG_RESULT([yes])
     PHP_ADD_LIBRARY_WITH_PATH([curl-impersonate], [$GCURL_LIB_DIR], [GCURL_SHARED_LIBADD])
     AC_DEFINE([HAVE_GCURL], [1], [Have gcurl support])
   ], [
+    AC_MSG_RESULT([no])
     AC_MSG_ERROR([libcurl-impersonate not found or curl_easy_impersonate missing in $GCURL_LIB_DIR])
-  ], [
-    -L$GCURL_LIB_DIR
   ])
+
+  CPPFLAGS=$save_old_CPPFLAGS
+  LDFLAGS=$save_old_LDFLAGS
+  LIBS=$save_old_LIBS
 
   PHP_SUBST([GCURL_SHARED_LIBADD])
   PHP_NEW_EXTENSION([gcurl], [gcurl.c gcurl_handle.c gcurl_multi.c gcurl_share.c gcurl_constants.c], [$ext_shared],, [-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1])
