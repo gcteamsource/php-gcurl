@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate Composer & PIE
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP & PIE
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer, pie
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Verify PIE metadata
+        run: |
+          pie info . || true
+
+  test-linux:
+    name: Linux glibc (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP & PIE
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: phpize, php-config, pie
+
+      - name: Install libcurl-impersonate (prebuilt)
+        run: |
+          curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.x86_64-linux-gnu.tar.gz | sudo tar -xz -C /usr/local
+          sudo ldconfig /usr/local/lib
+
+      - name: Build gcurl extension
+        run: |
+          cd ext
+          phpize
+          ./configure --with-gcurl=/usr/local
+          make -j$(nproc)
+
+      - name: Run Extension Unit Tests
+        run: |
+          cd ext
+          NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q" make test
+
+      - name: Run PHP SDK Tests
+        run: |
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=ext/modules/gcurl.so examples/test_single_handle.php
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=ext/modules/gcurl.so examples/test_oop_wrapper.php
+
+  test-alpine:
+    name: Alpine musl (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    container:
+      image: php:${{ matrix.php }}-cli-alpine
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+    steps:
+      - name: Install Build Tools
+        run: |
+          apk add --no-cache autoconf automake libtool build-base curl tar git bash
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install libcurl-impersonate musl (prebuilt)
+        run: |
+          curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.x86_64-linux-musl.tar.gz | tar -xz -C /usr/local
+
+      - name: Build gcurl extension
+        run: |
+          cd ext
+          phpize
+          ./configure --with-gcurl=/usr/local
+          make -j$(nproc)
+
+      - name: Run Extension Unit Tests
+        run: |
+          cd ext
+          NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q" make test
+
+      - name: Run PHP SDK Tests
+        run: |
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=ext/modules/gcurl.so examples/test_single_handle.php
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=ext/modules/gcurl.so examples/test_oop_wrapper.php

@@ -1,0 +1,50 @@
+{
+    "name": "greatcode/gcurl",
+    "description": "Native PHP C extension and client wrapping libcurl-impersonate for browser fingerprint impersonation (TLS/HTTP2).",
+    "type": "php-ext",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Greatcode",
+            "email": "cv.greatcode@gmail.com"
+        }
+    ],
+    "keywords": [
+        "curl",
+        "curl-impersonate",
+        "tls-fingerprint",
+        "ja3",
+        "ja4",
+        "http2-fingerprint",
+        "antibot",
+        "cloudflare",
+        "scraper",
+        "pie",
+        "php-ext"
+    ],
+    "homepage": "https://github.com/gcteamsource/php-gcurl",
+    "support": {
+        "issues": "https://github.com/gcteamsource/php-gcurl/issues",
+        "source": "https://github.com/gcteamsource/php-gcurl"
+    },
+    "require": {
+        "php": ">=8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Greatcode\\Gcurl\\": "src/"
+        }
+    },
+    "php-ext": {
+        "extension-name": "gcurl",
+        "build-path": "ext",
+        "configure-options": [
+            {
+                "name": "with-gcurl",
+                "description": "Path to libcurl-impersonate installation prefix (default: search standard paths)"
+            }
+        ]
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

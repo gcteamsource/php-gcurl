@@ -1,0 +1,164 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux-glibc:
+    name: Build glibc (${{ matrix.arch }}, PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        arch: ['x86_64', 'aarch64']
+        include:
+          - arch: x86_64
+            pkg_arch: x86_64-linux-gnu
+          - arch: aarch64
+            pkg_arch: aarch64-linux-gnu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        if: matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build via Docker
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          OUT_NAME="gcurl-${TAG}-php${{ matrix.php }}-linux-glibc-${{ matrix.arch }}"
+          
+          docker run --rm \
+            --platform linux/${{ matrix.arch }} \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            php:${{ matrix.php }}-cli \
+            bash -c "
+              set -e
+              apt-get update && apt-get install -y --no-install-recommends curl tar build-essential
+              
+              # Download libcurl-impersonate
+              mkdir -p /opt/curl-imp
+              curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.${{ matrix.pkg_arch }}.tar.gz | tar -xz -C /opt/curl-imp
+              
+              # Build extension
+              cd /workspace/ext
+              make distclean || true
+              phpize
+              ./configure --with-gcurl=/opt/curl-imp
+              make -j\$(nproc)
+              
+              # Bundle package
+              mkdir -p /workspace/dist/${OUT_NAME}
+              cp modules/gcurl.so /workspace/dist/${OUT_NAME}/
+              cp /opt/curl-imp/lib/libcurl-impersonate.so* /workspace/dist/${OUT_NAME}/ 2>/dev/null || true
+              cp /workspace/scripts/install-prebuilt.sh /workspace/dist/${OUT_NAME}/install.sh
+              chmod +x /workspace/dist/${OUT_NAME}/install.sh
+              cp /workspace/LICENSE /workspace/dist/${OUT_NAME}/
+              
+              cd /workspace/dist
+              tar -czf ${OUT_NAME}.tar.gz ${OUT_NAME}
+            "
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuilt-glibc-${{ matrix.arch }}-php${{ matrix.php }}
+          path: dist/*.tar.gz
+
+  build-linux-musl:
+    name: Build musl Alpine (${{ matrix.arch }}, PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        arch: ['x86_64', 'aarch64']
+        include:
+          - arch: x86_64
+            pkg_arch: x86_64-linux-musl
+          - arch: aarch64
+            pkg_arch: aarch64-linux-musl
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        if: matrix.arch == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build via Alpine Docker
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          OUT_NAME="gcurl-${TAG}-php${{ matrix.php }}-alpine-musl-${{ matrix.arch }}"
+          
+          docker run --rm \
+            --platform linux/${{ matrix.arch }} \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            php:${{ matrix.php }}-cli-alpine \
+            sh -c "
+              set -e
+              apk add --no-cache autoconf automake libtool build-base curl tar bash
+              
+              # Download libcurl-impersonate musl
+              mkdir -p /opt/curl-imp
+              curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.${{ matrix.pkg_arch }}.tar.gz | tar -xz -C /opt/curl-imp
+              
+              # Build extension
+              cd /workspace/ext
+              make distclean || true
+              phpize
+              ./configure --with-gcurl=/opt/curl-imp
+              make -j\$(nproc)
+              
+              # Bundle package
+              mkdir -p /workspace/dist/${OUT_NAME}
+              cp modules/gcurl.so /workspace/dist/${OUT_NAME}/
+              cp /opt/curl-imp/lib/libcurl-impersonate.so* /workspace/dist/${OUT_NAME}/ 2>/dev/null || true
+              cp /workspace/scripts/install-prebuilt.sh /workspace/dist/${OUT_NAME}/install.sh
+              chmod +x /workspace/dist/${OUT_NAME}/install.sh
+              cp /workspace/LICENSE /workspace/dist/${OUT_NAME}/
+              
+              cd /workspace/dist
+              tar -czf ${OUT_NAME}.tar.gz ${OUT_NAME}
+            "
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prebuilt-musl-${{ matrix.arch }}-php${{ matrix.php }}
+          path: dist/*.tar.gz
+
+  release:
+    name: Publish GitHub Release
+    needs: [build-linux-glibc, build-linux-musl]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: List Release Files
+        run: |
+          ls -lh release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

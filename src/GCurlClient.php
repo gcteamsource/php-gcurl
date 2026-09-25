@@ -1,6 +1,6 @@
 <?php
 
-namespace GCurl;
+namespace Greatcode\Gcurl;
 
 use GCurlHandle;
 

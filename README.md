@@ -1,140 +1,243 @@
-# gcurl — Custom TLS & HTTP/2 Impersonation Extension for PHP 8.4
+# gcurl — PHP Extension for Browser Fingerprint Impersonation
 
-> Native PHP 8.4 C extension wrapping `libcurl-impersonate` (BoringSSL & NSS) untuk mengatasi antibot modern (Cloudflare, Akamai, DataDome) dengan meniru ClientHello TLS (JA3/JA4) dan HTTP/2 fingerprint dari browser asli (Chrome, Firefox, Safari).
+[![CI](https://github.com/greatcode/gcurl/actions/workflows/ci.yml/badge.svg)](https://github.com/greatcode/gcurl/actions/workflows/ci.yml)
+[![PIE Compatible](https://img.shields.io/badge/PIE-Compatible-blue.svg?style=flat-square)](https://github.com/php/pie)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/greatcode/gcurl.svg?style=flat-square)](https://packagist.org/packages/greatcode/gcurl)
+[![PHP Version](https://img.shields.io/badge/php-%3E%3D%208.2-8892BF.svg?style=flat-square)](https://php.net)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
 
----
+**gcurl** is a high-performance native PHP C extension wrapping [`libcurl-impersonate`](https://github.com/lexiforest/curl-impersonate). It mimics the exact **TLS (JA3 / JA4)** and **HTTP/2** network fingerprints of modern web browsers (**Chrome** and **Firefox**), enabling scraping and API requests to bypass advanced antibot and WAF protections such as Cloudflare Turnstile, Akamai, and DataDome.
 
-## 🚀 Fitur Utama
-
-- **PHP 8.4 Native Extension (`gcurl`)**: API kompatibel dan identik dengan `curl_*` (`gcurl_init`, `gcurl_setopt`, `gcurl_exec`, `gcurl_multi_*`, dll).
-- **Dual Engine Impersonation**:
-  - **Chrome**: BoringSSL engine (mendukung TLS GREASE, ECH, ZSTD, X25519Kyber768, HTTP/2 SETTINGS identik).
-  - **Firefox**: NSS engine (cipher ordering dan extension khas Firefox).
-- **Concurrency & High Workload**: Full support untuk `gcurl_multi_*` asynchronous non-blocking event-loop (sangat cepat untuk scraping ribuan URL).
-- **Proxy Support**: Mendukung SOCKS5, SOCKS5h (DNS resolve di proxy), HTTP, HTTPS proxy yang dapat di-manage langsung di kode PHP.
-- **Bypass Cloudflare**: Integrasi mulus dengan Turnstile resolver eksternal (cukup inject `cf_clearance` dan User-Agent yang sama).
-- **High-Level PHP Wrappers**: Disertakan class OOP `GCurlClient` dan `GCurlPool` di folder `src/`.
+Distributed modernly via **[PIE (PHP Installer for Extensions)](https://github.com/php/pie)** and **Composer**.
 
 ---
 
-## 🛠️ Quick Start
+## Features
 
-### 1. Build Docker Image (Production Ready)
+- **True TLS Handshake Spoofing (JA3/JA4)**: Replaces OpenSSL's standard ClientHello with BoringSSL (Chrome) or NSS (Firefox) cipher ordering, extensions, curves (X25519Kyber768), and ECH.
+- **HTTP/2 Fingerprint Matching**: Accurate HTTP/2 `SETTINGS`, `WINDOW_UPDATE`, and frame priorities.
+- **`curl_*` Compatible API**: Drop-in procedural functions (`gcurl_init`, `gcurl_setopt`, `gcurl_exec`, etc.) alongside `gcurl_impersonate($ch, 'chrome'|'firefox')`.
+- **High-Level PHP SDK**: Fluent OOP HTTP client (`Greatcode\Gcurl\GCurlClient`) and async concurrency pool (`Greatcode\Gcurl\GCurlPool`).
+- **PHP 8.2, 8.3, 8.4 Support**: Native Zend Object class architecture (`GCurlHandle`, `GCurlMultiHandle`, `GCurlShareHandle`).
+- **Residential Proxy Ready**: Seamless pass-through for HTTP, SOCKS5, and SOCKS5h proxies via standard `GCURLOPT_PROXY`.
+
+---
+
+## Installation
+
+### 1. Install C Extension via PIE (Recommended)
+
+[PIE](https://github.com/php/pie) is the official, modern PHP extension installer created by The PHP Foundation (replacing PECL):
 
 ```bash
-docker build -t gcurl:latest .
+# Install PIE if not already installed (https://github.com/php/pie)
+pie install greatcode/gcurl
 ```
 
-### 2. Jalankan Container
+> **Note**: Ensure `libcurl-impersonate` is installed on your system (`/usr/local` or standard library path). If installed in a custom location:
+> ```bash
+> pie install greatcode/gcurl --with-gcurl=/path/to/libcurl-impersonate
+> ```
+
+---
+
+### 2. Install PHP SDK (Composer)
+
+Install the PHP client and concurrency pool via [Packagist](https://packagist.org/packages/greatcode/gcurl):
 
 ```bash
-docker run --rm -it -v $(pwd):/var/www/html gcurl:latest sh
-```
-
-### 3. Jalankan Test Suite
-
-```bash
-# Menjalankan official PHP phpt test runner
-docker run --rm -v $(pwd):/var/www/html gcurl:latest php /var/www/html/ext/run-tests.php -q /var/www/html/ext/tests/
+composer require greatcode/gcurl
 ```
 
 ---
 
-## 📖 Contoh Penggunaan
+### 3. Alternative: Prebuilt Binaries
 
-### 1. Basic Request dengan Impersonasi Chrome
+Pre-compiled binary releases are available from [GitHub Releases](https://github.com/greatcode/gcurl/releases):
 
-```php
-$ch = gcurl_init('https://tls.peet.ws/api/all');
+| Platform | Architectures | libc | Download |
+| :--- | :--- | :--- | :--- |
+| **Linux (Ubuntu / Debian / RHEL)** | `x86_64`, `aarch64` | glibc | [Latest Release](https://github.com/greatcode/gcurl/releases) |
+| **Alpine Linux (Docker)** | `x86_64`, `aarch64` | musl | [Latest Release](https://github.com/greatcode/gcurl/releases) |
 
-// Impersonasi Chrome (otomatis set TLS ciphers, curves, grease, dan HTTP/2 settings)
-gcurl_impersonate($ch, 'chrome');
-
-gcurl_setopt_array($ch, [
-    GCURLOPT_RETURNTRANSFER => true,
-    GCURLOPT_FOLLOWLOCATION => true,
-    GCURLOPT_TIMEOUT        => 30,
-]);
-
-$response = gcurl_exec($ch);
-$info = gcurl_getinfo($ch);
-gcurl_close($ch);
-
-echo "HTTP {$info['http_code']}\n";
-$data = json_decode($response, true);
-echo "JA3: " . $data['tls']['ja3'] . "\n";
+Extract and run the included installer:
+```bash
+tar -xzf gcurl-v0.1.0-php8.4-linux-glibc-x86_64.tar.gz
+cd gcurl-v0.1.0-php8.4-linux-glibc-x86_64
+sudo ./install.sh
 ```
 
-### 2. Fallback ke Firefox & Residential Proxy
+---
 
-```php
-$ch = gcurl_init('https://tls.peet.ws/api/all');
+### 4. Alternative: Build from Source
 
-// Jika target mendeteksi Chrome, ganti ke Firefox
-gcurl_impersonate($ch, 'firefox');
+```bash
+# Clone the repository
+git clone https://github.com/greatcode/gcurl.git
+cd gcurl/ext
 
-gcurl_setopt_array($ch, [
-    GCURLOPT_RETURNTRANSFER => true,
-    // Residential SOCKS5h proxy (DNS resolve di proxy)
-    GCURLOPT_PROXY          => 'socks5h://user:password@proxy.example.com:1080',
-    GCURLOPT_PROXYTYPE      => GCURLPROXY_SOCKS5,
-    GCURLOPT_TIMEOUT        => 30,
-]);
+# Prepare build environment
+phpize
+./configure --with-gcurl=/usr/local
+make -j$(nproc)
+sudo make install
 
-$response = gcurl_exec($ch);
-gcurl_close($ch);
+# Enable the extension in php.ini
+echo "extension=gcurl.so" | sudo tee -a $(php -r 'echo php_ini_loaded_file();')
 ```
 
-### 3. High-Concurrency Scraping dengan `GCurlPool`
+> **Note for Alpine/Linux with system libcurl**: When using `libcurl-impersonate`, set `ENV LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so` in your environment or Dockerfile to ensure PHP resolves symbols to the impersonation engine.
+
+---
+
+## Quickstart
+
+### 1. Fluent OOP Client (`Greatcode\Gcurl\GCurlClient`)
 
 ```php
-use GCurl\GCurlPool;
-use GCurl\GCurlResponse;
+<?php
 
-require_once __DIR__ . '/src/GCurlPool.php';
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Greatcode\Gcurl\GCurlClient;
+
+$client = new GCurlClient(browser: 'chrome');
+
+// Optional: Set residential proxy
+// $client->setProxy('socks5h://user:pass@proxy.example.com:1080');
+
+$response = $client->get('https://tls.peet.ws/api/all');
+
+echo "HTTP Code: " . $response->statusCode() . PHP_EOL;
+$json = $response->json();
+echo "JA3 Fingerprint: " . $json['tls']['ja3'] . PHP_EOL;
+```
+
+---
+
+### 2. High-Concurrency Pool (`Greatcode\Gcurl\GCurlPool`)
+
+For large-scale scraping with automatic proxy rotation:
+
+```php
+<?php
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Greatcode\Gcurl\GCurlPool;
+use Greatcode\Gcurl\GCurlResponse;
 
 $proxies = [
-    'socks5h://user1:pass@proxy1:1080',
-    'socks5h://user2:pass@proxy2:1080',
+    'socks5h://proxy1.example.com:1080',
+    'socks5h://proxy2.example.com:1080',
 ];
 
-$pool = new GCurlPool(concurrency: 50, browser: 'chrome', proxies: $proxies);
+$pool = new GCurlPool(concurrency: 20, browser: 'chrome', proxies: $proxies);
 
-for ($i = 0; $i < 500; $i++) {
-    $pool->add("https://example.com/item/$i", function(GCurlResponse $res, string $url) {
-        if ($res->isSuccess()) {
-            echo "Fetched $url in {$res->totalTime()}s\n";
-        }
+for ($i = 1; $i <= 100; $i++) {
+    $pool->add("https://httpbin.org/get?id={$i}", function (GCurlResponse $res, string $url) {
+        echo "Finished {$url} -> Status " . $res->statusCode() . PHP_EOL;
     });
 }
 
+// Execute parallel requests non-blocking
 $pool->run();
 ```
 
 ---
 
-## 📂 Struktur Project
+### 3. Procedural API (`gcurl_*`)
 
-```text
-.
-├── Dockerfile                      # Multi-stage production image (PHP 8.4 Alpine + gcurl)
-├── docker-compose.yml              # Dev & testing service
-├── ext/                            # PHP C Extension Source
-│   ├── config.m4                   # Autotools build config
-│   ├── php_gcurl.h                 # Headers, structs, macros
-│   ├── gcurl.c                     # Module entry & class registration
-│   ├── gcurl_handle.c              # Core handle, impersonate, setopt, exec
-│   ├── gcurl_multi.c               # Concurrency multi-handle
-│   ├── gcurl_share.c               # Share handle implementation
-│   ├── gcurl_constants.c           # All GCURLOPT_* and GCURLINFO_* constants
-│   └── tests/                      # .phpt unit test suite
-├── src/                            # PHP OOP Wrappers
-│   ├── GCurlClient.php             # Fluent OOP HTTP Client
-│   ├── GCurlResponse.php           # Response DTO
-│   └── GCurlPool.php               # High-volume worker pool with proxy rotation
-└── examples/                       # Executable sample scripts
-    ├── test_single_handle.php      # Verifikasi single handle & impersonate
-    ├── test_multi_concurrency.php  # Verifikasi concurrency multi-handle
-    ├── test_oop_wrapper.php        # Verifikasi class GCurlClient & GCurlPool
-    └── login_kasirpintar.php       # Integrasi bypass Cloudflare kasirpintar.com
+If you prefer standard `curl_*` procedural syntax:
+
+```php
+<?php
+
+$ch = gcurl_init();
+
+// 1. Set browser impersonation BEFORE other options
+gcurl_impersonate($ch, 'chrome'); // or 'firefox'
+
+gcurl_setopt_array($ch, [
+    GCURLOPT_URL            => 'https://tls.peet.ws/api/all',
+    GCURLOPT_RETURNTRANSFER => true,
+    GCURLOPT_ENCODING       => '', // Auto-decompress gzip/br/zstd
+    GCURLOPT_TIMEOUT        => 15,
+]);
+
+$response = gcurl_exec($ch);
+
+if (gcurl_errno($ch)) {
+    echo "Error: " . gcurl_error($ch) . PHP_EOL;
+} else {
+    echo $response;
+}
+
+gcurl_close($ch);
 ```
+
+---
+
+## Supported Browser Profiles
+
+Pass any of the following targets to `gcurl_impersonate($ch, $target)` or `new GCurlClient(browser: $target)`:
+
+| Profile | Engine | Target Names |
+| :--- | :--- | :--- |
+| **Chrome** | BoringSSL | `'chrome'` *(alias to latest)*, `'chrome131'`, `'chrome124'`, `'chrome120'`, `'chrome116'` |
+| **Firefox** | NSS | `'firefox'` *(alias to latest)*, `'firefox133'`, `'firefox117'` |
+| **Safari** | BoringSSL | `'safari'`, `'safari180'` |
+| **Edge** | BoringSSL | `'edge'`, `'edge101'` |
+
+---
+
+## Cloudflare Turnstile & Challenge Bypass Workflow
+
+When scraping protected endpoints:
+
+```
+┌──────────────────────────────────────────────┐
+│ Turnstile Solver (External)                  │
+│ Solves widget -> yields cf_clearance + UA    │
+└──────────────────────┬───────────────────────┘
+                       │
+                       ▼
+┌──────────────────────────────────────────────┐
+│ gcurl Script                                 │
+│ 1. gcurl_impersonate($ch, 'chrome')          │
+│ 2. Set Cookie: cf_clearance=...              │
+│ 3. Set User-Agent matching solver            │
+│ 4. Send Request via residential proxy        │
+└──────────────────────┬───────────────────────┘
+                       │
+                       ▼
+               200 OK (Bypassed! 🎉)
+```
+
+```php
+$client = new GCurlClient(browser: 'chrome');
+$client->setHeader('User-Agent', $turnstileUserAgent);
+$client->setHeader('Cookie', 'cf_clearance=' . $cfClearance);
+$client->setProxy($residentialProxy);
+
+$res = $client->get('https://example.com/protected-page');
+```
+
+---
+
+## Contributing
+
+Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Run tests (`cd ext && make test`)
+4. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+5. Push to the Branch (`git push origin feature/AmazingFeature`)
+6. Open a Pull Request
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE) - see the LICENSE file for details.

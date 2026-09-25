@@ -3,9 +3,9 @@
 require_once __DIR__ . '/../src/GCurlClient.php';
 require_once __DIR__ . '/../src/GCurlPool.php';
 
-use GCurl\GCurlClient;
-use GCurl\GCurlPool;
-use GCurl\GCurlResponse;
+use Greatcode\Gcurl\GCurlClient;
+use Greatcode\Gcurl\GCurlPool;
+use Greatcode\Gcurl\GCurlResponse;
 
 echo "=== Testing GCurlClient ===" . PHP_EOL;
 
