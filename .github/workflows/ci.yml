@@ -46,8 +46,8 @@ jobs:
 
       - name: Install libcurl-impersonate (prebuilt)
         run: |
-          curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.x86_64-linux-gnu.tar.gz | sudo tar -xz -C /usr/local
-          sudo ldconfig /usr/local/lib
+          chmod +x scripts/install-libcurl-impersonate.sh
+          sudo ./scripts/install-libcurl-impersonate.sh v2.0.0 /usr/local
 
       - name: Build gcurl extension
         run: |
@@ -85,7 +85,8 @@ jobs:
 
       - name: Install libcurl-impersonate musl (prebuilt)
         run: |
-          curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.x86_64-linux-musl.tar.gz | tar -xz -C /usr/local
+          chmod +x scripts/install-libcurl-impersonate.sh
+          ./scripts/install-libcurl-impersonate.sh v2.0.0 /usr/local
 
       - name: Build gcurl extension
         run: |

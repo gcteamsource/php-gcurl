@@ -32,9 +32,11 @@ if test "$PHP_GCURL" != "no"; then
 
   PHP_ADD_INCLUDE([$GCURL_DIR/include])
 
-  dnl Determine library directory (lib or lib64)
+  dnl Determine library directory (lib, lib64, or root prefix)
   GCURL_LIB_DIR="$GCURL_DIR/lib"
-  if test -d "$GCURL_DIR/lib64" && test ! -f "$GCURL_DIR/lib/libcurl-impersonate.so"; then
+  if test -f "$GCURL_DIR/libcurl-impersonate.so"; then
+    GCURL_LIB_DIR="$GCURL_DIR"
+  elif test -d "$GCURL_DIR/lib64" && test ! -f "$GCURL_DIR/lib/libcurl-impersonate.so"; then
     GCURL_LIB_DIR="$GCURL_DIR/lib64"
   fi
 

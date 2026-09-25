@@ -44,9 +44,13 @@ jobs:
               set -e
               apt-get update && apt-get install -y --no-install-recommends curl tar build-essential
               
-              # Download libcurl-impersonate
-              mkdir -p /opt/curl-imp
-              curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.${{ matrix.pkg_arch }}.tar.gz | tar -xz -C /opt/curl-imp
+              # Download and install libcurl-impersonate
+              mkdir -p /opt/curl-imp/include /opt/curl-imp/lib
+              TMP_DIR=\$(mktemp -d)
+              curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.${{ matrix.pkg_arch }}.tar.gz | tar -xz -C \"\$TMP_DIR\"
+              cp -r \"\$TMP_DIR/include/\"* /opt/curl-imp/include/
+              cp -a \"\$TMP_DIR\"/libcurl-impersonate* /opt/curl-imp/lib/
+              rm -rf \"\$TMP_DIR\"
               
               # Build extension
               cd /workspace/ext
@@ -108,9 +112,13 @@ jobs:
               set -e
               apk add --no-cache autoconf automake libtool build-base curl tar bash
               
-              # Download libcurl-impersonate musl
-              mkdir -p /opt/curl-imp
-              curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.${{ matrix.pkg_arch }}.tar.gz | tar -xz -C /opt/curl-imp
+              # Download and install libcurl-impersonate musl
+              mkdir -p /opt/curl-imp/include /opt/curl-imp/lib
+              TMP_DIR=\$(mktemp -d)
+              curl -fsSL https://github.com/lexiforest/curl-impersonate/releases/download/v2.0.0/libcurl-impersonate-v2.0.0.${{ matrix.pkg_arch }}.tar.gz | tar -xz -C \"\$TMP_DIR\"
+              cp -r \"\$TMP_DIR/include/\"* /opt/curl-imp/include/
+              cp -a \"\$TMP_DIR\"/libcurl-impersonate* /opt/curl-imp/lib/
+              rm -rf \"\$TMP_DIR\"
               
               # Build extension
               cd /workspace/ext
