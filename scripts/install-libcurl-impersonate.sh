@@ -37,6 +37,10 @@ cp -r "${TMP_DIR}/include/"* "${PREFIX}/include/"
 cp -a "${TMP_DIR}"/libcurl-impersonate* "${PREFIX}/lib/"
 chmod 755 "${PREFIX}"/lib/libcurl-impersonate.so* 2>/dev/null || true
 
+if [ -d /etc/ld.so.conf.d ]; then
+  echo "${PREFIX}/lib" > /etc/ld.so.conf.d/libcurl-impersonate.conf 2>/dev/null || true
+fi
+
 if command -v ldconfig &> /dev/null; then
   ldconfig "${PREFIX}/lib" 2>/dev/null || true
 fi

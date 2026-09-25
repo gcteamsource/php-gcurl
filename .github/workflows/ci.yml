@@ -49,22 +49,27 @@ jobs:
           chmod +x scripts/install-libcurl-impersonate.sh
           sudo ./scripts/install-libcurl-impersonate.sh v2.0.0 /usr/local
 
-      - name: Build gcurl extension
+      - name: Build and install gcurl extension
         run: |
           cd ext
           phpize
           ./configure --with-gcurl=/usr/local
           make -j$(nproc)
+          sudo make install
 
       - name: Run Extension Unit Tests
         run: |
           cd ext
           NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q" make test
 
+      - name: Verify Extension Loaded in CLI
+        run: |
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=gcurl.so -m | grep -i gcurl
+
       - name: Run PHP SDK Tests
         run: |
-          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=ext/modules/gcurl.so examples/test_single_handle.php
-          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=ext/modules/gcurl.so examples/test_oop_wrapper.php
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=gcurl.so examples/test_single_handle.php
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=gcurl.so examples/test_oop_wrapper.php
 
   test-alpine:
     name: Alpine musl (PHP ${{ matrix.php }})
@@ -88,19 +93,24 @@ jobs:
           chmod +x scripts/install-libcurl-impersonate.sh
           ./scripts/install-libcurl-impersonate.sh v2.0.0 /usr/local
 
-      - name: Build gcurl extension
+      - name: Build and install gcurl extension
         run: |
           cd ext
           phpize
           ./configure --with-gcurl=/usr/local
           make -j$(nproc)
+          make install
 
       - name: Run Extension Unit Tests
         run: |
           cd ext
           NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q" make test
 
+      - name: Verify Extension Loaded in CLI
+        run: |
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=gcurl.so -m | grep -i gcurl
+
       - name: Run PHP SDK Tests
         run: |
-          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=ext/modules/gcurl.so examples/test_single_handle.php
-          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=ext/modules/gcurl.so examples/test_oop_wrapper.php
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=gcurl.so examples/test_single_handle.php
+          LD_PRELOAD=/usr/local/lib/libcurl-impersonate.so php -d extension=gcurl.so examples/test_oop_wrapper.php
