@@ -74,5 +74,6 @@ if test "$PHP_GCURL" != "no"; then
   LIBS=$save_old_LIBS
 
   PHP_SUBST([GCURL_SHARED_LIBADD])
-  PHP_NEW_EXTENSION([gcurl], [gcurl.c gcurl_handle.c gcurl_multi.c gcurl_share.c gcurl_constants.c], [$ext_shared],, [-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1])
+  ext_shared=yes
+  PHP_NEW_EXTENSION([gcurl], [gcurl.c gcurl_handle.c gcurl_multi.c gcurl_share.c gcurl_constants.c], [yes],, [-DZEND_ENABLE_STATIC_TSRMLS_CACHE=1])
 fi
