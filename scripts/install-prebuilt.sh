@@ -29,8 +29,12 @@ cp "${SCRIPT_DIR}/gcurl.so" "$EXT_DIR/"
 if [ -f "${SCRIPT_DIR}/libcurl-impersonate.so" ]; then
   echo "Installing libcurl-impersonate.so into /usr/local/lib..."
   cp "${SCRIPT_DIR}/libcurl-impersonate.so"* /usr/local/lib/
+  if [ -d /etc/ld.so.conf.d ]; then
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/libcurl-impersonate.conf 2>/dev/null || true
+  fi
   if command -v ldconfig &> /dev/null; then
     ldconfig /usr/local/lib 2>/dev/null || true
+    ldconfig 2>/dev/null || true
   fi
 fi
 

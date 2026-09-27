@@ -42,7 +42,7 @@ jobs:
             php:${{ matrix.php }}-cli \
             bash -c "
               set -e
-              apt-get update && apt-get install -y --no-install-recommends curl tar build-essential
+              apt-get update && apt-get install -y --no-install-recommends curl tar build-essential autoconf
               
               # Download and install libcurl-impersonate
               mkdir -p /opt/curl-imp/include /opt/curl-imp/lib

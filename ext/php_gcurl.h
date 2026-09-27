@@ -12,6 +12,16 @@
 #include "zend_exceptions.h"
 #include "zend_smart_str.h"
 
+#if PHP_VERSION_ID < 80400
+static inline zend_class_entry *zend_register_internal_class_with_flags(zend_class_entry *ce, zend_class_entry *parent_ce, uint32_t flags) {
+    zend_class_entry *class_entry = zend_register_internal_class_ex(ce, parent_ce);
+    if (class_entry) {
+        class_entry->ce_flags |= flags;
+    }
+    return class_entry;
+}
+#endif
+
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <curl/multi.h>

@@ -21,7 +21,7 @@ var_dump(gcurl_setopt_array($ch, [
 var_dump(gcurl_setopt($ch, GCURLOPT_PROXY, 'socks5h://proxy.example.com:1080'));
 var_dump(gcurl_setopt($ch, GCURLOPT_PROXYTYPE, GCURLPROXY_SOCKS5));
 
-var_dump(GCURLOPT_URL === CURLOPT_URL);
+var_dump(GCURLOPT_URL === (defined('CURLOPT_URL') ? CURLOPT_URL : 10002));
 var_dump(GCURLOPT_RETURNTRANSFER === 19913);
 
 gcurl_close($ch);

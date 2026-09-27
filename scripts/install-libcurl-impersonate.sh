@@ -43,6 +43,7 @@ fi
 
 if command -v ldconfig &> /dev/null; then
   ldconfig "${PREFIX}/lib" 2>/dev/null || true
+  ldconfig 2>/dev/null || true
 fi
 
 echo "✓ libcurl-impersonate successfully installed:"
