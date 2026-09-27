@@ -60,7 +60,7 @@ jobs:
       - name: Run Extension Unit Tests
         run: |
           cd ext
-          NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q" make test
+          NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q --show-diff" make test
 
       - name: Verify Extension Loaded in CLI
         run: |
@@ -83,7 +83,7 @@ jobs:
     steps:
       - name: Install Build Tools
         run: |
-          apk add --no-cache autoconf automake libtool build-base curl tar git bash
+          apk add --no-cache autoconf automake libtool build-base curl tar git bash ca-certificates
 
       - name: Checkout
         uses: actions/checkout@v4
@@ -104,7 +104,7 @@ jobs:
       - name: Run Extension Unit Tests
         run: |
           cd ext
-          NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q" make test
+          NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q --show-diff" make test
 
       - name: Verify Extension Loaded in CLI
         run: |

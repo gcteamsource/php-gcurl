@@ -110,7 +110,7 @@ jobs:
             php:${{ matrix.php }}-cli-alpine \
             sh -c "
               set -e
-              apk add --no-cache autoconf automake libtool build-base curl tar bash
+              apk add --no-cache autoconf automake libtool build-base curl tar bash ca-certificates
               
               # Download and install libcurl-impersonate musl
               mkdir -p /opt/curl-imp/include /opt/curl-imp/lib
