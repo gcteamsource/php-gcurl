@@ -46,6 +46,17 @@ if command -v ldconfig &> /dev/null; then
   ldconfig 2>/dev/null || true
 fi
 
+# On Alpine / musl systems where standard libcurl may be loaded by php binary,
+# symlink libcurl.so.4 to libcurl-impersonate to prevent symbol preemption
+if [ "${LIBC}" = "linux-musl" ]; then
+  for dir in /usr/lib /lib; do
+    if [ -e "${dir}/libcurl.so.4" ] || [ -e "${dir}/libcurl.so" ]; then
+      ln -sf "${PREFIX}/lib/libcurl-impersonate.so.4" "${dir}/libcurl.so.4" 2>/dev/null || true
+      ln -sf "${PREFIX}/lib/libcurl-impersonate.so" "${dir}/libcurl.so" 2>/dev/null || true
+    fi
+  done
+fi
+
 echo "✓ libcurl-impersonate successfully installed:"
 ls -lh "${PREFIX}/lib"/libcurl-impersonate*
 ls -lh "${PREFIX}/include/curl/curl.h"

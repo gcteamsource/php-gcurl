@@ -58,6 +58,8 @@ jobs:
           sudo make install
 
       - name: Run Extension Unit Tests
+        env:
+          LD_PRELOAD: /usr/local/lib/libcurl-impersonate.so
         run: |
           cd ext
           NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q --show-diff" make test
@@ -102,6 +104,8 @@ jobs:
           make install
 
       - name: Run Extension Unit Tests
+        env:
+          LD_PRELOAD: /usr/local/lib/libcurl-impersonate.so
         run: |
           cd ext
           NO_INTERACTION=1 REPORT_EXIT_STATUS=1 TEST_PHP_ARGS="-q --show-diff" make test
