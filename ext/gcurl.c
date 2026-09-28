@@ -21,11 +21,16 @@ zend_object_handlers gcurl_share_handlers;
 PHP_FUNCTION(gcurl_version)
 {
     zend_long age = CURLVERSION_NOW;
+    bool age_is_null = 0;
 
     ZEND_PARSE_PARAMETERS_START(0, 1)
         Z_PARAM_OPTIONAL
-        Z_PARAM_LONG(age)
+        Z_PARAM_LONG_OR_NULL(age, age_is_null)
     ZEND_PARSE_PARAMETERS_END();
+
+    if (age_is_null) {
+        age = CURLVERSION_NOW;
+    }
 
     curl_version_info_data *d = curl_version_info((CURLversion)age);
     if (!d) {
@@ -94,6 +99,7 @@ PHP_MINIT_FUNCTION(gcurl)
     gcurl_share_handlers.free_obj  = gcurl_share_free_obj;
     gcurl_share_handlers.clone_obj = NULL;
 
+    register_gcurl_handle_symbols(module_number);
     gcurl_register_constants(module_number);
 
     return SUCCESS;

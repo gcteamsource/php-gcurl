@@ -477,11 +477,12 @@ PHP_FUNCTION(gcurl_getinfo)
 {
     zval      *zid;
     zend_long  option = 0;
+    bool       option_is_null = 0;
 
     ZEND_PARSE_PARAMETERS_START(1, 2)
         Z_PARAM_OBJECT_OF_CLASS(zid, gcurl_handle_ce)
         Z_PARAM_OPTIONAL
-        Z_PARAM_LONG(option)
+        Z_PARAM_LONG_OR_NULL(option, option_is_null)
     ZEND_PARSE_PARAMETERS_END();
 
     php_gcurl_handle *ch = Z_GCURL_HANDLE_P(zid);
@@ -489,7 +490,7 @@ PHP_FUNCTION(gcurl_getinfo)
         RETURN_FALSE;
     }
 
-    if (ZEND_NUM_ARGS() == 2) {
+    if (ZEND_NUM_ARGS() >= 2 && !option_is_null) {
         char      *sval = NULL;
         zend_long  lval = 0;
         double     dval = 0.0;
